@@ -8,22 +8,30 @@ namespace TellDontAskKata.Main.Domain
     {
         private readonly List<OrderItem> _items = new List<OrderItem>();
 
-        public decimal Total { get; set; }
-        public string Currency { get; set; }
+        public Order(int id, OrderStatus status)
+        {
+            Id = id;
+            Status = status;
+        }
+
+        private Order(OrderStatus status, string currency)
+        {
+            Status = status;
+            Currency = currency;
+            Total = 0m;
+            Tax = 0m;
+        }
+
+        public decimal Total { get; private set; }
+        public string Currency { get; }
         public IReadOnlyList<OrderItem> Items => _items;
-        public decimal Tax { get; set; }
-        public OrderStatus Status { get; set; }
-        public int Id { get; set; }
+        public decimal Tax { get; private set; }
+        public OrderStatus Status { get; private set; }
+        public int Id { get; }
 
         public static Order Create()
         {
-            return new Order
-            {
-                Status = OrderStatus.Created,
-                Currency = "EUR",
-                Total = 0m,
-                Tax = 0m
-            };
+            return new Order(OrderStatus.Created, "EUR");
         }
 
         public void AddItem(Product product, int quantity)

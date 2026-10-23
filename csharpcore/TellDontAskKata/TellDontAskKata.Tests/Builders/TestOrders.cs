@@ -6,11 +6,7 @@ namespace TellDontAskKata.Tests.Builders
     {
         public static Order WithStatus(OrderStatus status, int id = 1)
         {
-            return new Order
-            {
-                Status = status,
-                Id = id
-            };
+            return new Order(id, status);
         }
     }
 }
