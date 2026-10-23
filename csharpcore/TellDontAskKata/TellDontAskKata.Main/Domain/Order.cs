@@ -38,6 +38,11 @@ namespace TellDontAskKata.Main.Domain
 
         public static Order Restore(int id, OrderStatus status, string currency, IEnumerable<OrderItem> items)
         {
+            if (!Enum.IsDefined(typeof(OrderStatus), status))
+            {
+                throw new ArgumentOutOfRangeException(nameof(status), status, "Status must be a defined OrderStatus value.");
+            }
+
             if (items == null)
             {
                 throw new ArgumentNullException(nameof(items));

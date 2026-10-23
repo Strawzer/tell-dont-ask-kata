@@ -221,22 +221,20 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0, _orderRepository.SaveCount);
         }
 
-        // Characterizes incidental behavior: status checks only exclude known states,
-        // so an order with an undefined status value can be approved or rejected.
         [Theory]
-        [Trait("Category", "IncidentalBehavior")]
-        [InlineData(true, OrderStatus.Approved)]
-        [InlineData(false, OrderStatus.Rejected)]
-        public void OrderWithUndefinedStatusCanBeApprovedOrRejected(bool approved, OrderStatus expected)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void OrderWithUndefinedStatusCannotBeRestoredSoNothingIsApprovedOrRejected(bool approved)
         {
-            var initialOrder = TestOrders.WithStatus((OrderStatus)99, 1);
-            _orderRepository.AddOrder(initialOrder);
+            Action actionToTest = () =>
+            {
+                _orderRepository.AddOrder(TestOrders.WithStatus((OrderStatus)99, 1));
+                _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
+            };
 
-            _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
-
-            Assert.Same(initialOrder, _orderRepository.GetSavedOrder());
-            Assert.Equal(expected, initialOrder.Status);
-            Assert.Equal(1, _orderRepository.SaveCount);
+            Assert.Throws<ArgumentOutOfRangeException>(actionToTest);
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(0, _orderRepository.SaveCount);
         }
 
         [Theory]
