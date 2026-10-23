@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using TellDontAskKata.Main.Service;
 using TellDontAskKata.Main.UseCase;
 
@@ -8,17 +9,19 @@ namespace TellDontAskKata.Main.Domain
     public class Order
     {
         private readonly List<OrderItem> _items = new List<OrderItem>();
+        private readonly ReadOnlyCollection<OrderItem> _readOnlyItems;
 
         private Order(int id, OrderStatus status, string currency)
         {
             Id = id;
             Status = status;
             Currency = currency;
+            _readOnlyItems = _items.AsReadOnly();
         }
 
         public decimal Total { get; private set; }
         public string Currency { get; }
-        public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
+        public IReadOnlyList<OrderItem> Items => _readOnlyItems;
         public decimal Tax { get; private set; }
         public OrderStatus Status { get; private set; }
         public int Id { get; }

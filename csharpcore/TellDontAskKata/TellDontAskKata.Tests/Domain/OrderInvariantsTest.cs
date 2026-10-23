@@ -69,6 +69,18 @@ namespace TellDontAskKata.Tests.Domain
             Assert.Equal(2.13m, order.Tax);
         }
 
+        [Fact]
+        public void ItemsReturnsSameReadOnlyView()
+        {
+            var order = Order.Create();
+
+            var before = order.Items;
+            order.AddItem(Salad, 1);
+
+            Assert.Same(before, order.Items);
+            Assert.Single(before);
+        }
+
         private class OneShotEnumerable : IEnumerable<OrderItem>
         {
             private readonly OrderItem[] _items;
