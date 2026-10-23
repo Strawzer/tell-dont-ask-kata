@@ -207,6 +207,52 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0, _orderRepository.SaveCount);
         }
 
+        // The shipment happens before the save, so a failing save leaves the order shipped
+        // externally but not persisted. A retry that reloads the still-Approved order from a real
+        // store would ship it a second time (pre-existing risk, unchanged from the original code).
+        [Fact]
+        public void SaveFailureAfterShipmentPropagatesAndLeavesOrderShipped()
+        {
+            var saveFailure = new InvalidOperationException("save failed");
+            var orderRepository = new ThrowingOnSaveOrderRepository(saveFailure);
+            var shipmentService = new FlakyShipmentService(0);
+            var useCase = new OrderShipmentUseCase(orderRepository, shipmentService);
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            orderRepository.AddOrder(initialOrder);
+
+            Action actionToTest = () => useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            var thrown = Assert.Throws<InvalidOperationException>(actionToTest);
+            Assert.Same(saveFailure, thrown);
+            Assert.Equal(1, shipmentService.Calls);
+            Assert.Same(initialOrder, shipmentService.LastShippedOrder);
+            Assert.Equal(1, orderRepository.SaveAttempts);
+            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
+        }
+
+        [Fact]
+        public void ShipmentRetryAfterServiceFailureSucceeds()
+        {
+            var shipmentService = new FlakyShipmentService(1);
+            var useCase = new OrderShipmentUseCase(_orderRepository, shipmentService);
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            _orderRepository.AddOrder(initialOrder);
+            var request = new OrderShipmentRequest { OrderId = 1 };
+
+            Assert.Throws<InvalidOperationException>(() => useCase.Run(request));
+            Assert.Equal(OrderStatus.Approved, initialOrder.Status);
+            Assert.Equal(0, _orderRepository.SaveCount);
+
+            useCase.Run(request);
+
+            Assert.Equal(2, shipmentService.Calls);
+            Assert.Equal(1, shipmentService.SuccessfulShipments);
+            Assert.Same(initialOrder, shipmentService.LastShippedOrder);
+            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
+            Assert.Same(initialOrder, _orderRepository.GetSavedOrder());
+            Assert.Equal(1, _orderRepository.SaveCount);
+        }
+
         // Characterizes incidental behavior: an unknown order id is not handled explicitly,
         // so the use case dereferences a null order.
         [Fact]
