@@ -1,6 +1,7 @@
 ﻿using System;
 using TellDontAskKata.Main.Domain;
 using TellDontAskKata.Main.UseCase;
+using TellDontAskKata.Tests.Builders;
 using TellDontAskKata.Tests.Doubles;
 using Xunit;
 
@@ -23,11 +24,7 @@ namespace TellDontAskKata.Tests.UseCase
         [Fact]
         public void ShipApprovedOrder()
         {
-            var initialOrder = new Order
-            {
-                Status = OrderStatus.Approved,
-                Id = 1
-            };
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
             _orderRepository.AddOrder(initialOrder);
 
             var request = new OrderShipmentRequest
@@ -44,11 +41,7 @@ namespace TellDontAskKata.Tests.UseCase
         [Fact]
         public void CreatedOrdersCannotBeShipped()
         {
-            var initialOrder = new Order
-            {
-                Status = OrderStatus.Created,
-                Id = 1
-            };
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Created, 1);
             _orderRepository.AddOrder(initialOrder);
 
             var request = new OrderShipmentRequest
@@ -66,11 +59,7 @@ namespace TellDontAskKata.Tests.UseCase
         [Fact]
         public void RejectedOrdersCannotBeShipped()
         {
-            var initialOrder = new Order
-            {
-                Status = OrderStatus.Rejected,
-                Id = 1
-            };
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Rejected, 1);
             _orderRepository.AddOrder(initialOrder);
 
             var request = new OrderShipmentRequest
@@ -88,11 +77,7 @@ namespace TellDontAskKata.Tests.UseCase
         [Fact]
         public void ShippedOrdersCannotBeShippedAgain()
         {
-            var initialOrder = new Order
-            {
-                Status = OrderStatus.Shipped,
-                Id = 1
-            };
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Shipped, 1);
             _orderRepository.AddOrder(initialOrder);
 
             var request = new OrderShipmentRequest
@@ -107,6 +92,101 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Null(_shipmentService.GetShippedOrder());
         }
 
+        [Fact]
+        public void SavedOrderIsTheShippedInstance()
+        {
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            _orderRepository.AddOrder(initialOrder);
+
+            var request = new OrderShipmentRequest
+            {
+                OrderId = 1
+            };
+
+            _useCase.Run(request);
+
+            Assert.Same(initialOrder, _orderRepository.GetSavedOrder());
+            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
+        }
+
+        [Fact]
+        public void ShipmentServiceReceivesOrderWhileStillApproved()
+        {
+            var capturingShipmentService = new StatusCapturingShipmentService();
+            var useCase = new OrderShipmentUseCase(_orderRepository, capturingShipmentService);
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            _orderRepository.AddOrder(initialOrder);
+
+            var request = new OrderShipmentRequest
+            {
+                OrderId = 1
+            };
+
+            useCase.Run(request);
+
+            Assert.Same(initialOrder, capturingShipmentService.GetShippedOrder());
+            Assert.Equal(OrderStatus.Approved, capturingShipmentService.GetStatusAtShipment());
+            Assert.Equal(OrderStatus.Shipped, _orderRepository.GetSavedOrder().Status);
+        }
+
+        [Fact]
+        public void FailingShipmentServiceLeavesOrderApprovedAndUnsaved()
+        {
+            var shipmentFailure = new InvalidOperationException("shipment failed");
+            var useCase = new OrderShipmentUseCase(_orderRepository, new FailingShipmentService(shipmentFailure));
+            var initialOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            _orderRepository.AddOrder(initialOrder);
+
+            var request = new OrderShipmentRequest
+            {
+                OrderId = 1
+            };
+
+            Action actionToTest = () => useCase.Run(request);
+
+            var thrown = Assert.Throws<InvalidOperationException>(actionToTest);
+            Assert.Same(shipmentFailure, thrown);
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(OrderStatus.Approved, initialOrder.Status);
+        }
+
+        [Fact]
+        public void OnlyTheRequestedOrderIsShipped()
+        {
+            var otherOrder = TestOrders.WithStatus(OrderStatus.Approved, 1);
+            var requestedOrder = TestOrders.WithStatus(OrderStatus.Approved, 2);
+            _orderRepository.AddOrder(otherOrder);
+            _orderRepository.AddOrder(requestedOrder);
+
+            var request = new OrderShipmentRequest
+            {
+                OrderId = 2
+            };
+
+            _useCase.Run(request);
+
+            Assert.Same(requestedOrder, _shipmentService.GetShippedOrder());
+            Assert.Same(requestedOrder, _orderRepository.GetSavedOrder());
+            Assert.Equal(OrderStatus.Approved, otherOrder.Status);
+        }
+
+        // Characterizes incidental behavior: an unknown order id is not handled explicitly,
+        // so the use case dereferences a null order.
+        [Fact]
+        [Trait("Category", "IncidentalBehavior")]
+        public void UnknownOrderThrowsNullReferenceAndShipsNothing()
+        {
+            var request = new OrderShipmentRequest
+            {
+                OrderId = 42
+            };
+
+            Action actionToTest = () => _useCase.Run(request);
+
+            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Null(_shipmentService.GetShippedOrder());
+        }
 
     }
 }
