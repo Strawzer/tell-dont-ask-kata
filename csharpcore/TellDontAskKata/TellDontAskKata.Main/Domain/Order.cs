@@ -117,6 +117,12 @@ namespace TellDontAskKata.Main.Domain
                 throw new OrderCannotBeShippedTwiceException();
             }
 
+            // Checked after the status guards so invalid states keep reporting their domain exception.
+            if (shipmentService == null)
+            {
+                throw new ArgumentNullException(nameof(shipmentService));
+            }
+
             shipmentService.Ship(this);
 
             Status = OrderStatus.Shipped;
