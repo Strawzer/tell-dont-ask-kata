@@ -2,9 +2,17 @@
 {
     public class OrderItem
     {
-        public Product Product { get; set; }
-        public int Quantity { get; set; }
-        public decimal TaxedAmount { get; set; }
-        public decimal Tax { get; set; }
+        public OrderItem(Product product, int quantity)
+        {
+            Product = product;
+            Quantity = quantity;
+            TaxedAmount = Money.Round(product.UnitaryTaxedAmount * quantity);
+            Tax = Money.Round(product.UnitaryTax * quantity);
+        }
+
+        public Product Product { get; }
+        public int Quantity { get; }
+        public decimal TaxedAmount { get; }
+        public decimal Tax { get; }
     }
 }

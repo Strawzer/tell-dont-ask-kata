@@ -37,28 +37,14 @@ namespace TellDontAskKata.Main.UseCase
                 }
                 else
                 {
-                    var taxedAmount = Round(product.UnitaryTaxedAmount * itemRequest.Quantity);
-                    var taxAmount = Round(product.UnitaryTax * itemRequest.Quantity);
-
-                    var orderItem = new OrderItem
-                    {
-                        Product = product,
-                        Quantity = itemRequest.Quantity,
-                        Tax = taxAmount,
-                        TaxedAmount = taxedAmount
-                    };
+                    var orderItem = new OrderItem(product, itemRequest.Quantity);
                     order.Items.Add(orderItem);
-                    order.Total += taxedAmount;
-                    order.Tax += taxAmount;
+                    order.Total += orderItem.TaxedAmount;
+                    order.Tax += orderItem.Tax;
                 }
             }
 
             _orderRepository.Save(order);
-        }
-
-        private static decimal Round(decimal amount)
-        {
-            return decimal.Round(amount, 2, System.MidpointRounding.ToPositiveInfinity);
         }
     }
 }
