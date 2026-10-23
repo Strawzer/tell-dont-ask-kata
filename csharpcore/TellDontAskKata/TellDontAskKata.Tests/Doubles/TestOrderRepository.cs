@@ -10,9 +10,12 @@ namespace TellDontAskKata.Tests.Doubles
         private Order _insertedOrder;
         private IList<Order> _orders = new List<Order>();
 
+        public int SaveCount { get; private set; }
+
         public void Save(Order order)
         {
             _insertedOrder = order;
+            SaveCount++;
         }
 
         public Order GetById(int orderId)

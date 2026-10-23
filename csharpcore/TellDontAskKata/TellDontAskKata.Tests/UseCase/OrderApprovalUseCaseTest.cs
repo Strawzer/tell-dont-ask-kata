@@ -209,6 +209,35 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(OrderStatus.Created, otherOrder.Status);
         }
 
+        [Theory]
+        [InlineData(OrderStatus.Created, true)]
+        [InlineData(OrderStatus.Created, false)]
+        [InlineData(OrderStatus.Approved, true)]
+        [InlineData(OrderStatus.Rejected, false)]
+        public void SuccessfulApprovalOrRejectionSavesExactlyOnce(OrderStatus initial, bool approved)
+        {
+            _orderRepository.AddOrder(TestOrders.WithStatus(initial, 1));
+
+            _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
+
+            Assert.Equal(1, _orderRepository.SaveCount);
+        }
+
+        [Theory]
+        [InlineData(OrderStatus.Rejected, true, typeof(RejectedOrderCannotBeApprovedException))]
+        [InlineData(OrderStatus.Approved, false, typeof(ApprovedOrderCannotBeRejectedException))]
+        [InlineData(OrderStatus.Shipped, true, typeof(ShippedOrdersCannotBeChangedException))]
+        [InlineData(OrderStatus.Shipped, false, typeof(ShippedOrdersCannotBeChangedException))]
+        public void FailedApprovalOrRejectionSavesNothing(OrderStatus initial, bool approved, Type expectedException)
+        {
+            _orderRepository.AddOrder(TestOrders.WithStatus(initial, 1));
+
+            Action actionToTest = () => _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
+
+            Assert.Throws(expectedException, actionToTest);
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
         // Characterizes incidental behavior: an unknown order id is not handled explicitly,
         // so the use case dereferences a null order.
         [Theory]

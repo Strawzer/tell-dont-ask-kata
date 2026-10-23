@@ -170,6 +170,43 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(OrderStatus.Approved, otherOrder.Status);
         }
 
+        [Fact]
+        public void SuccessfulShipmentSavesExactlyOnce()
+        {
+            _orderRepository.AddOrder(TestOrders.WithStatus(OrderStatus.Approved, 1));
+
+            _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            Assert.Equal(1, _orderRepository.SaveCount);
+        }
+
+        [Theory]
+        [InlineData(OrderStatus.Created, typeof(OrderCannotBeShippedException))]
+        [InlineData(OrderStatus.Rejected, typeof(OrderCannotBeShippedException))]
+        [InlineData(OrderStatus.Shipped, typeof(OrderCannotBeShippedTwiceException))]
+        public void FailedShipmentSavesNothing(OrderStatus initial, Type expectedException)
+        {
+            _orderRepository.AddOrder(TestOrders.WithStatus(initial, 1));
+
+            Action actionToTest = () => _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            Assert.Throws(expectedException, actionToTest);
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
+        [Fact]
+        public void FailingShipmentServiceSavesNothing()
+        {
+            var useCase = new OrderShipmentUseCase(
+                _orderRepository, new FailingShipmentService(new InvalidOperationException("shipment failed")));
+            _orderRepository.AddOrder(TestOrders.WithStatus(OrderStatus.Approved, 1));
+
+            Action actionToTest = () => useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            Assert.Throws<InvalidOperationException>(actionToTest);
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
         // Characterizes incidental behavior: an unknown order id is not handled explicitly,
         // so the use case dereferences a null order.
         [Fact]

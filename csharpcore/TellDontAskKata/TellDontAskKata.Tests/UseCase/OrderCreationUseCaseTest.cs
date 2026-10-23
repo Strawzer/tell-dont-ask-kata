@@ -392,6 +392,39 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(new[] { requestedName }, spyCatalog.RequestedNames);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(3)]
+        public void SuccessfulCreationSavesExactlyOnce(int itemCount)
+        {
+            var requests = new List<SellItemRequest>();
+            for (var i = 0; i < itemCount; i++)
+            {
+                requests.Add(new SellItemRequest { ProductName = "salad", Quantity = 1 });
+            }
+
+            _useCase.Run(new SellItemsRequest { Requests = requests });
+
+            Assert.Equal(1, _orderRepository.SaveCount);
+            Assert.Equal(itemCount, _orderRepository.GetSavedOrder().Items.Count);
+        }
+
+        [Fact]
+        public void FailedCreationSavesNothing()
+        {
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = "salad", Quantity = 1 },
+                    new SellItemRequest { ProductName = "unknown product", Quantity = 1 }
+                }
+            };
+
+            Assert.Throws<UnknownProductException>(() => _useCase.Run(request));
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
         private OrderCreationUseCase CreateUseCaseWithSingleProduct(string name, decimal price, decimal taxPercentage)
         {
             var category = new Category("category", taxPercentage);
