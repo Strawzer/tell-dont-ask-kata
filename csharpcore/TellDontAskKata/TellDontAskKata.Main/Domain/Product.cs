@@ -1,4 +1,6 @@
-﻿namespace TellDontAskKata.Main.Domain
+﻿using System;
+
+namespace TellDontAskKata.Main.Domain
 {
     public class Product
     {
@@ -6,7 +8,7 @@
         {
             Name = name;
             Price = price;
-            Category = category;
+            Category = category ?? throw new ArgumentNullException(nameof(category));
         }
 
         public string Name { get; }

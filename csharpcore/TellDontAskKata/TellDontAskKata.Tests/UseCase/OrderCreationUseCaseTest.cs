@@ -488,17 +488,9 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0.72m, insertedOrder.Tax);
         }
 
-        // Characterizes incidental behavior: a product without a category is not validated,
-        // so tax computation dereferences a null category.
         [Fact]
-        [Trait("Category", "IncidentalBehavior")]
-        public void ProductWithNullCategoryThrowsNullReferenceAndSavesNothing()
+        public void ProductWithNullCategoryCannotBeCreatedAndNothingIsSaved()
         {
-            var catalog = new InMemoryProductCatalog(new List<Product>
-            {
-                new Product("uncategorized", 1m, null)
-            });
-            var useCase = new OrderCreationUseCase(_orderRepository, catalog);
             var request = new SellItemsRequest
             {
                 Requests = new List<SellItemRequest> {
@@ -506,9 +498,16 @@ namespace TellDontAskKata.Tests.UseCase
                 }
             };
 
-            Action actionToTest = () => useCase.Run(request);
+            Action actionToTest = () =>
+            {
+                var catalog = new InMemoryProductCatalog(new List<Product>
+                {
+                    new Product("uncategorized", 1m, null)
+                });
+                new OrderCreationUseCase(_orderRepository, catalog).Run(request);
+            };
 
-            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Throws<ArgumentNullException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
             Assert.Equal(0, _orderRepository.SaveCount);
         }
