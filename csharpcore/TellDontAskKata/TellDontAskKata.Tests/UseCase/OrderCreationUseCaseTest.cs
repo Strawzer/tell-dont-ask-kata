@@ -482,6 +482,54 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0, _orderRepository.SaveCount);
         }
 
+        [Fact]
+        public void SellItemsRequestMutatedAfterRunDoesNotAffectOrder()
+        {
+            var saladRequest = new SellItemRequest { ProductName = "salad", Quantity = 2 };
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> { saladRequest }
+            };
+
+            _useCase.Run(request);
+            saladRequest.Quantity = 5;
+            saladRequest.ProductName = "tomato";
+            request.Requests.Clear();
+
+            Order insertedOrder = _orderRepository.GetSavedOrder();
+            Assert.Single(insertedOrder.Items);
+            Assert.Equal("salad", insertedOrder.Items[0].Product.Name);
+            Assert.Equal(2, insertedOrder.Items[0].Quantity);
+            Assert.Equal(7.84m, insertedOrder.Items[0].TaxedAmount);
+            Assert.Equal(7.84m, insertedOrder.Total);
+            Assert.Equal(0.72m, insertedOrder.Tax);
+        }
+
+        // Characterizes incidental behavior: a product without a category is not validated,
+        // so tax computation dereferences a null category.
+        [Fact]
+        [Trait("Category", "IncidentalBehavior")]
+        public void ProductWithNullCategoryThrowsNullReferenceAndSavesNothing()
+        {
+            var catalog = new InMemoryProductCatalog(new List<Product>
+            {
+                new Product("uncategorized", 1m, null)
+            });
+            var useCase = new OrderCreationUseCase(_orderRepository, catalog);
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = "uncategorized", Quantity = 1 }
+                }
+            };
+
+            Action actionToTest = () => useCase.Run(request);
+
+            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
         private OrderCreationUseCase CreateUseCaseWithSingleProduct(string name, decimal price, decimal taxPercentage)
         {
             var category = new Category("category", taxPercentage);

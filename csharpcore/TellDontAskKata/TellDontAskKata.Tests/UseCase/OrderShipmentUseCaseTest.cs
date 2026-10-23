@@ -253,6 +253,38 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(1, _orderRepository.SaveCount);
         }
 
+        // Characterizes incidental behavior: default(OrderStatus) is Approved, so an order whose
+        // status was never set is shippable.
+        [Fact]
+        [Trait("Category", "IncidentalBehavior")]
+        public void OrderWithDefaultStatusCanBeShipped()
+        {
+            var initialOrder = TestOrders.WithStatus(default(OrderStatus), 1);
+            _orderRepository.AddOrder(initialOrder);
+
+            _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            Assert.Same(initialOrder, _shipmentService.GetShippedOrder());
+            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
+            Assert.Equal(1, _orderRepository.SaveCount);
+        }
+
+        // Characterizes incidental behavior: status checks only exclude known states,
+        // so an undefined status value is shippable.
+        [Fact]
+        [Trait("Category", "IncidentalBehavior")]
+        public void OrderWithUndefinedStatusCanBeShipped()
+        {
+            var initialOrder = TestOrders.WithStatus((OrderStatus)99, 1);
+            _orderRepository.AddOrder(initialOrder);
+
+            _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+
+            Assert.Same(initialOrder, _shipmentService.GetShippedOrder());
+            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
+            Assert.Equal(1, _orderRepository.SaveCount);
+        }
+
         // Characterizes incidental behavior: an unknown order id is not handled explicitly,
         // so the use case dereferences a null order.
         [Fact]
