@@ -348,6 +348,50 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0.63m, insertedOrder.Tax);
         }
 
+        [Fact]
+        public void NoLookupsAfterAnUnknownProduct()
+        {
+            var spyCatalog = new SpyProductCatalog(_productCatalog);
+            var useCase = new OrderCreationUseCase(_orderRepository, spyCatalog);
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = "salad", Quantity = 1 },
+                    new SellItemRequest { ProductName = "unknown product", Quantity = 1 },
+                    new SellItemRequest { ProductName = "tomato", Quantity = 1 }
+                }
+            };
+
+            Action actionToTest = () => useCase.Run(request);
+
+            Assert.Throws<UnknownProductException>(actionToTest);
+            Assert.Equal(new[] { "salad", "unknown product" }, spyCatalog.RequestedNames);
+            Assert.Null(_orderRepository.GetSavedOrder());
+        }
+
+        // Characterizes that product names reach the catalog verbatim (no trimming or case folding);
+        // matching rules belong to the catalog, which here compares ordinally.
+        [Theory]
+        [InlineData("Salad")]
+        [InlineData("SALAD")]
+        [InlineData(" salad")]
+        public void ProductNameIsPassedToCatalogVerbatim(string requestedName)
+        {
+            var spyCatalog = new SpyProductCatalog(_productCatalog);
+            var useCase = new OrderCreationUseCase(_orderRepository, spyCatalog);
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = requestedName, Quantity = 1 }
+                }
+            };
+
+            Action actionToTest = () => useCase.Run(request);
+
+            Assert.Throws<UnknownProductException>(actionToTest);
+            Assert.Equal(new[] { requestedName }, spyCatalog.RequestedNames);
+        }
+
         private OrderCreationUseCase CreateUseCaseWithSingleProduct(string name, decimal price, decimal taxPercentage)
         {
             var category = new Category("category", taxPercentage);
