@@ -8,11 +8,6 @@ namespace TellDontAskKata.Main.Domain
     {
         private readonly List<OrderItem> _items = new List<OrderItem>();
 
-        public Order(int id, OrderStatus status)
-            : this(id, status, null)
-        {
-        }
-
         private Order(int id, OrderStatus status, string currency)
         {
             Id = id;

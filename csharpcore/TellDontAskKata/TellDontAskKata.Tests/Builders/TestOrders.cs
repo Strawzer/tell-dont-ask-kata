@@ -1,3 +1,4 @@
+using System.Linq;
 using TellDontAskKata.Main.Domain;
 
 namespace TellDontAskKata.Tests.Builders
@@ -6,7 +7,7 @@ namespace TellDontAskKata.Tests.Builders
     {
         public static Order WithStatus(OrderStatus status, int id = 1)
         {
-            return new Order(id, status);
+            return Order.Restore(id, status, "EUR", Enumerable.Empty<OrderItem>());
         }
     }
 }
