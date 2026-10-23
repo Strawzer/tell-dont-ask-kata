@@ -29,6 +29,11 @@ namespace TellDontAskKata.Main.Domain
         public OrderStatus Status { get; private set; }
         public int Id { get; }
 
+        private bool IsCreated => Status == OrderStatus.Created;
+        private bool IsApproved => Status == OrderStatus.Approved;
+        private bool IsRejected => Status == OrderStatus.Rejected;
+        private bool IsShipped => Status == OrderStatus.Shipped;
+
         public static Order Create()
         {
             return new Order(OrderStatus.Created, "EUR");
@@ -44,12 +49,12 @@ namespace TellDontAskKata.Main.Domain
 
         public void Approve()
         {
-            if (Status == OrderStatus.Shipped)
+            if (IsShipped)
             {
                 throw new ShippedOrdersCannotBeChangedException();
             }
 
-            if (Status == OrderStatus.Rejected)
+            if (IsRejected)
             {
                 throw new RejectedOrderCannotBeApprovedException();
             }
@@ -59,12 +64,12 @@ namespace TellDontAskKata.Main.Domain
 
         public void Reject()
         {
-            if (Status == OrderStatus.Shipped)
+            if (IsShipped)
             {
                 throw new ShippedOrdersCannotBeChangedException();
             }
 
-            if (Status == OrderStatus.Approved)
+            if (IsApproved)
             {
                 throw new ApprovedOrderCannotBeRejectedException();
             }
@@ -74,12 +79,12 @@ namespace TellDontAskKata.Main.Domain
 
         public void Ship(IShipmentService shipmentService)
         {
-            if (Status == OrderStatus.Created || Status == OrderStatus.Rejected)
+            if (IsCreated || IsRejected)
             {
                 throw new OrderCannotBeShippedException();
             }
 
-            if (Status == OrderStatus.Shipped)
+            if (IsShipped)
             {
                 throw new OrderCannotBeShippedTwiceException();
             }
