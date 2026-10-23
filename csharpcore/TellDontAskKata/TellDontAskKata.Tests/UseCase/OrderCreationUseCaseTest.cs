@@ -254,16 +254,14 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(-0.36m, insertedOrder.Tax);
         }
 
-        // Characterizes incidental behavior: a request without a Requests list is not validated.
         [Fact]
-        [Trait("Category", "IncidentalBehavior")]
-        public void NullRequestListThrowsNullReferenceAndSavesNothing()
+        public void NullRequestListThrowsArgumentExceptionAndSavesNothing()
         {
             var request = new SellItemsRequest();
 
             Action actionToTest = () => _useCase.Run(request);
 
-            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Throws<ArgumentException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
         }
 
