@@ -317,6 +317,63 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(expectedTaxedAmount, insertedOrder.Total);
         }
 
+        // Characterizes incidental behavior: ToPositiveInfinity is a directed rounding (ceiling),
+        // so negative amounts round toward zero rather than away from it. Negative prices and
+        // tax percentages are not validated.
+        [Theory]
+        [Trait("Category", "IncidentalBehavior")]
+        // -1.01 * 10% = -0.101 -> -0.10; -1.01 + -0.10 = -1.11
+        [InlineData("-1.01", "10", 1, "-0.10", "-1.11")]
+        // 1.01 * -10% = -0.101 -> -0.10; 1.01 + -0.10 = 0.91
+        [InlineData("1.01", "-10", 1, "-0.10", "0.91")]
+        // -1.005 * 10% = -0.1005 -> -0.10; -1.005 + -0.10 = -1.105 -> -1.10; times 3
+        [InlineData("-1.005", "10", 3, "-0.30", "-3.30")]
+        public void NegativeAmountsAreRoundedTowardPositiveInfinity(
+            string price, string taxPercentage, int quantity, string expectedTaxText, string expectedTaxedAmountText)
+        {
+            var expectedTax = decimal.Parse(expectedTaxText, CultureInfo.InvariantCulture);
+            var expectedTaxedAmount = decimal.Parse(expectedTaxedAmountText, CultureInfo.InvariantCulture);
+            var useCase = CreateUseCaseWithSingleProduct(
+                "item",
+                decimal.Parse(price, CultureInfo.InvariantCulture),
+                decimal.Parse(taxPercentage, CultureInfo.InvariantCulture));
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = "item", Quantity = quantity }
+                }
+            };
+
+            useCase.Run(request);
+
+            Order insertedOrder = _orderRepository.GetSavedOrder();
+            Assert.Equal(expectedTax, insertedOrder.Items[0].Tax);
+            Assert.Equal(expectedTaxedAmount, insertedOrder.Items[0].TaxedAmount);
+            Assert.Equal(expectedTax, insertedOrder.Tax);
+            Assert.Equal(expectedTaxedAmount, insertedOrder.Total);
+        }
+
+        // Characterizes incidental behavior: rounding does not pad to two decimals, so the decimal
+        // scale of amounts follows the arithmetic (visible when formatting, not in equality).
+        [Fact]
+        [Trait("Category", "IncidentalBehavior")]
+        public void AmountsKeepTheScaleProducedByTheArithmetic()
+        {
+            var useCase = CreateUseCaseWithSingleProduct("item", 10m, 10m);
+            var request = new SellItemsRequest
+            {
+                Requests = new List<SellItemRequest> {
+                    new SellItemRequest { ProductName = "item", Quantity = 1 }
+                }
+            };
+
+            useCase.Run(request);
+
+            Order insertedOrder = _orderRepository.GetSavedOrder();
+            Assert.Equal("11.0", insertedOrder.Total.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal("1.0", insertedOrder.Tax.ToString(CultureInfo.InvariantCulture));
+        }
+
         [Fact]
         public void TotalsAreSumsOfLineAmountsAcrossTaxCategories()
         {
