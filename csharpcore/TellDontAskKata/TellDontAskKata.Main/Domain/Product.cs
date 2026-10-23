@@ -2,9 +2,16 @@
 {
     public class Product
     {
-        public string Name { get; set; }
-        public decimal Price { get; set; }
-        public Category Category { get; set; }
+        public Product(string name, decimal price, Category category)
+        {
+            Name = name;
+            Price = price;
+            Category = category;
+        }
+
+        public string Name { get; }
+        public decimal Price { get; }
+        public Category Category { get; }
 
         public decimal UnitaryTax => Money.Round((Price / 100m) * Category.TaxPercentage);
 

@@ -2,7 +2,13 @@
 {
     public class Category
     {
-        public string Name { get; set; }
-        public decimal TaxPercentage { get; set; }
+        public Category(string name, decimal taxPercentage)
+        {
+            Name = name;
+            TaxPercentage = taxPercentage;
+        }
+
+        public string Name { get; }
+        public decimal TaxPercentage { get; }
     }
 }

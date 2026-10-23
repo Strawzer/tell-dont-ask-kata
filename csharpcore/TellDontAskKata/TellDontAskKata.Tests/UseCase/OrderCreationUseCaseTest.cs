@@ -17,25 +17,12 @@ namespace TellDontAskKata.Tests.UseCase
 
         public OrderCreationUseCaseTest()
         {
-            var food = new Category { 
-                Name = "food",
-                TaxPercentage = 10m
-            };
+            var food = new Category("food", 10m);
 
             _productCatalog = new InMemoryProductCatalog(new List<Product>
             {
-                new Product
-                {
-                    Name = "salad",
-                    Price = 3.56m,
-                    Category = food
-                },
-                new Product
-                {
-                    Name = "tomato",
-                    Price = 4.65m,
-                    Category = food
-                }
+                new Product("salad", 3.56m, food),
+                new Product("tomato", 4.65m, food)
             });
 
             _orderRepository = new TestOrderRepository();
@@ -333,12 +320,12 @@ namespace TellDontAskKata.Tests.UseCase
         [Fact]
         public void TotalsAreSumsOfLineAmountsAcrossTaxCategories()
         {
-            var books = new Category { Name = "books", TaxPercentage = 0m };
-            var drinks = new Category { Name = "drinks", TaxPercentage = 20m };
+            var books = new Category("books", 0m);
+            var drinks = new Category("drinks", 20m);
             var catalog = new InMemoryProductCatalog(new List<Product>
             {
-                new Product { Name = "novel", Price = 12.49m, Category = books },
-                new Product { Name = "juice", Price = 1.01m, Category = drinks }
+                new Product("novel", 12.49m, books),
+                new Product("juice", 1.01m, drinks)
             });
             var useCase = new OrderCreationUseCase(_orderRepository, catalog);
             var request = new SellItemsRequest
@@ -363,10 +350,10 @@ namespace TellDontAskKata.Tests.UseCase
 
         private OrderCreationUseCase CreateUseCaseWithSingleProduct(string name, decimal price, decimal taxPercentage)
         {
-            var category = new Category { Name = "category", TaxPercentage = taxPercentage };
+            var category = new Category("category", taxPercentage);
             var catalog = new InMemoryProductCatalog(new List<Product>
             {
-                new Product { Name = name, Price = price, Category = category }
+                new Product(name, price, category)
             });
             return new OrderCreationUseCase(_orderRepository, catalog);
         }
