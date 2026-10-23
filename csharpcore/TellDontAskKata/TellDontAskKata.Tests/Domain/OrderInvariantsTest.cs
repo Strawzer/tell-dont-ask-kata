@@ -13,6 +13,26 @@ namespace TellDontAskKata.Tests.Domain
         private static readonly Product Tomato = new Product("tomato", 4.65m, Food);
 
         [Fact]
+        public void RestoreRejectsNullItems()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Order.Restore(1, OrderStatus.Approved, "EUR", null));
+
+            Assert.Equal("items", exception.ParamName);
+        }
+
+        [Fact]
+        public void RestoreRejectsNullItemElement()
+        {
+            var items = new List<OrderItem> { new OrderItem(Salad, 1), null };
+
+            var exception = Assert.Throws<ArgumentException>(
+                () => Order.Restore(1, OrderStatus.Approved, "EUR", items));
+
+            Assert.Equal("items", exception.ParamName);
+        }
+
+        [Fact]
         public void RestoreCopiesSuppliedItems()
         {
             var saladItem = new OrderItem(Salad, 2);

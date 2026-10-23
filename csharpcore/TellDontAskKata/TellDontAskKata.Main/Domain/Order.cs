@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TellDontAskKata.Main.Service;
 using TellDontAskKata.Main.UseCase;
 
@@ -34,8 +35,19 @@ namespace TellDontAskKata.Main.Domain
 
         public static Order Restore(int id, OrderStatus status, string currency, IEnumerable<OrderItem> items)
         {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            var suppliedItems = new List<OrderItem>(items);
+            if (suppliedItems.Contains(null))
+            {
+                throw new ArgumentException("Items must not contain null.", nameof(items));
+            }
+
             var order = new Order(id, status, currency);
-            foreach (var item in items)
+            foreach (var item in suppliedItems)
             {
                 order.Append(item);
             }
