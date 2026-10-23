@@ -65,6 +65,11 @@ namespace TellDontAskKata.Main.Domain
 
         public void AddItem(Product product, int quantity)
         {
+            if (IsShipped)
+            {
+                throw new ShippedOrdersCannotBeChangedException();
+            }
+
             Append(new OrderItem(product, quantity));
         }
 
