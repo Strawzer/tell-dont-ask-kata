@@ -9,9 +9,8 @@ namespace TellDontAskKata.Main.Domain
         private readonly List<OrderItem> _items = new List<OrderItem>();
 
         public Order(int id, OrderStatus status)
+            : this(id, status, null)
         {
-            Id = id;
-            Status = status;
         }
 
         private Order(OrderStatus status, string currency)
@@ -20,6 +19,13 @@ namespace TellDontAskKata.Main.Domain
             Currency = currency;
             Total = 0m;
             Tax = 0m;
+        }
+
+        private Order(int id, OrderStatus status, string currency)
+        {
+            Id = id;
+            Status = status;
+            Currency = currency;
         }
 
         public decimal Total { get; private set; }
@@ -39,9 +45,24 @@ namespace TellDontAskKata.Main.Domain
             return new Order(OrderStatus.Created, "EUR");
         }
 
+        public static Order Restore(int id, OrderStatus status, string currency, IEnumerable<OrderItem> items)
+        {
+            var order = new Order(id, status, currency);
+            foreach (var item in items)
+            {
+                order.Append(item);
+            }
+
+            return order;
+        }
+
         public void AddItem(Product product, int quantity)
         {
-            var item = new OrderItem(product, quantity);
+            Append(new OrderItem(product, quantity));
+        }
+
+        private void Append(OrderItem item)
+        {
             _items.Add(item);
             Total += item.TaxedAmount;
             Tax += item.Tax;
