@@ -49,5 +49,18 @@ namespace TellDontAskKata.Tests.Domain
             Assert.Throws<ShippedOrdersCannotBeChangedException>(() => order.Approve());
             Assert.Equal(OrderStatus.Shipped, order.Status);
         }
+
+        [Fact]
+        public void ItemsCannotBeModifiedThroughCastToList()
+        {
+            var order = Order.Create();
+            order.AddItem(Salad, 1);
+
+            var items = Assert.IsAssignableFrom<IList<OrderItem>>(order.Items);
+
+            Assert.Throws<NotSupportedException>(() => items.Add(new OrderItem(Tomato, 1)));
+            Assert.Single(order.Items);
+            Assert.Equal(3.92m, order.Total);
+        }
     }
 }

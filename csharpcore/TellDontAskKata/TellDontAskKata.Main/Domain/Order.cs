@@ -30,7 +30,7 @@ namespace TellDontAskKata.Main.Domain
 
         public decimal Total { get; private set; }
         public string Currency { get; }
-        public IReadOnlyList<OrderItem> Items => _items;
+        public IReadOnlyList<OrderItem> Items => _items.AsReadOnly();
         public decimal Tax { get; private set; }
         public OrderStatus Status { get; private set; }
         public int Id { get; }
