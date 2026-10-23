@@ -20,6 +20,11 @@ namespace TellDontAskKata.Main.UseCase
         {
             var order = _orderRepository.GetById(request.OrderId);
 
+            if (order == null)
+            {
+                throw new OrderNotFoundException(request.OrderId);
+            }
+
             order.Ship(_shipmentService);
 
             _orderRepository.Save(order);

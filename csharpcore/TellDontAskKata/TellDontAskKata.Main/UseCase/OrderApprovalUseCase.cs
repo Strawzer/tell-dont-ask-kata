@@ -14,6 +14,11 @@ namespace TellDontAskKata.Main.UseCase
         {
             var order = _orderRepository.GetById(request.OrderId);
 
+            if (order == null)
+            {
+                throw new OrderNotFoundException(request.OrderId);
+            }
+
             if (request.Approved)
             {
                 order.Approve();

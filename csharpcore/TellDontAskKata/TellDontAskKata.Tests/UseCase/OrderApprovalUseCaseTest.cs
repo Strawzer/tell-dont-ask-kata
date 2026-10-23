@@ -239,13 +239,10 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(1, _orderRepository.SaveCount);
         }
 
-        // Characterizes incidental behavior: an unknown order id is not handled explicitly,
-        // so the use case dereferences a null order.
         [Theory]
-        [Trait("Category", "IncidentalBehavior")]
         [InlineData(true)]
         [InlineData(false)]
-        public void UnknownOrderThrowsNullReferenceAndSavesNothing(bool approved)
+        public void UnknownOrderThrowsOrderNotFoundAndSavesNothing(bool approved)
         {
             var request = new OrderApprovalRequest
             {
@@ -255,7 +252,7 @@ namespace TellDontAskKata.Tests.UseCase
 
             Action actionToTest = () => _useCase.Run(request);
 
-            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Throws<OrderNotFoundException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
         }
 
