@@ -1,7 +1,7 @@
 # Tell Don't Ask Kata (C#): Modernization Report
 
 Scope: `csharpcore/TellDontAskKata` only. Other language implementations, the repository attribution and the license are untouched.
-Branch: `modernization/tell-dont-ask`, based on `master` at `b9e1757`. It is not pushed and not merged.
+Branch: `modernization/tell-dont-ask`, based on `master` at `b9e1757`. It was not pushed when this report was written. It was later published to [Strawzer/tell-dont-ask-kata](https://github.com/Strawzer/tell-dont-ask-kata) and is not merged into `master`.
 
 ## 1. Baseline (before any change)
 
@@ -54,7 +54,7 @@ The refactoring went in small steps, with a green suite after every commit:
   - The use cases only orchestrate.
 - **Encapsulation:** no public setters remain on domain objects, and the item collection can't be changed from outside.
 - **Tell Don't Ask:** the use cases call `order.AddItem`, `Approve`, `Reject` and `Ship` instead of reading state and writing it back.
-- **Open/Closed and cohesion:** each transition rule now lives in one place, next to the state it guards.
+- **Cohesion:** each transition rule now lives in one place, next to the state it guards. This is not an Open/Closed improvement: adding a status still means editing `Order`.
 - **Dependency inversion:** we kept the existing ports (`IOrderRepository`, `IProductCatalog`, `IShipmentService`) unchanged.
 
 ## 5. Tests added or improved
@@ -74,7 +74,7 @@ The refactoring went in small steps, with a green suite after every commit:
 
 ## 6. Final build and test results
 
-Run on `modernization/tell-dont-ask` at `1486c97`:
+Run on `modernization/tell-dont-ask` at `1486c97`, the last code commit. This report was committed afterwards as `e65651c`, which adds only this file; the senior review re-ran the suite at `e65651c` with the same result.
 
 ```
 dotnet build --no-incremental  ->  Build succeeded. 0 Warning(s) 0 Error(s)
@@ -99,7 +99,7 @@ dotnet test (DOTNET_ROLL_FORWARD=Major)
 - **The domain depends on the use-case and service namespaces.** The domain throws exceptions defined in `TellDontAskKata.Main.UseCase`, and `Order.Ship` depends on `Service.IShipmentService`. We avoided moving public types to keep compatibility.
 - **`default(OrderStatus)` is still `Approved`.** We kept this for numeric compatibility.
 - **No input validation.** Negative or zero quantities, null requests and unknown order ids behave as before, including the `NullReferenceException`s.
-- **`AddItem` has no status guard.** Items can be added to approved or shipped orders, as before; the domain only exposes it at creation time.
+- **`AddItem` has no status guard.** Items can be added to approved or shipped orders, as before. `AddItem` is public, so nothing restricts it to creation time; only the creation use case calls it.
 - **No order id assignment.** Created orders have `Id == 0`; assigning ids is the repository's job, and no real repository exists.
 - **Currency is a hard-coded `"EUR"` string.** Amounts are raw `decimal`s, not a money value object.
 - **The framework is out of support.** `netcoreapp3.1` is end-of-life, and tests need roll-forward on current machines.
