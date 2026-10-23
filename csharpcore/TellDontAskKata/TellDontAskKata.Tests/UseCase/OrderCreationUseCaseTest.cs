@@ -84,21 +84,6 @@ namespace TellDontAskKata.Tests.UseCase
             Action actionToTest = () => _useCase.Run(request);
 
             Assert.Throws<UnknownProductException>(actionToTest);
-        }
-
-        [Fact]
-        public void UnknownProductSavesNothing()
-        {
-            var request = new SellItemsRequest
-            {
-                Requests = new List<SellItemRequest> {
-                    new SellItemRequest { ProductName = "unknown product", Quantity = 1 }
-                }
-            };
-
-            Action actionToTest = () => _useCase.Run(request);
-
-            Assert.Throws<UnknownProductException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
         }
 

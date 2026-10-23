@@ -73,6 +73,7 @@ namespace TellDontAskKata.Tests.UseCase
       
             Assert.Throws<RejectedOrderCannotBeApprovedException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(OrderStatus.Rejected, initialOrder.Status);
         }
 
         [Fact]
@@ -168,24 +169,6 @@ namespace TellDontAskKata.Tests.UseCase
             var savedOrder = _orderRepository.GetSavedOrder();
             Assert.Same(initialOrder, savedOrder);
             Assert.Equal(OrderStatus.Rejected, savedOrder.Status);
-        }
-
-        [Fact]
-        public void FailedApprovalLeavesOrderStatusUnchanged()
-        {
-            var initialOrder = TestOrders.WithStatus(OrderStatus.Rejected, 1);
-            _orderRepository.AddOrder(initialOrder);
-
-            var request = new OrderApprovalRequest
-            {
-                OrderId = 1,
-                Approved = true
-            };
-
-            Action actionToTest = () => _useCase.Run(request);
-
-            Assert.Throws<RejectedOrderCannotBeApprovedException>(actionToTest);
-            Assert.Equal(OrderStatus.Rejected, initialOrder.Status);
         }
 
         [Fact]
