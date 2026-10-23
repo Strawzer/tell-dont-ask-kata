@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using TellDontAskKata.Main.Service;
 using TellDontAskKata.Main.UseCase;
 
 namespace TellDontAskKata.Main.Domain
@@ -61,6 +62,23 @@ namespace TellDontAskKata.Main.Domain
             }
 
             Status = OrderStatus.Rejected;
+        }
+
+        public void Ship(IShipmentService shipmentService)
+        {
+            if (Status == OrderStatus.Created || Status == OrderStatus.Rejected)
+            {
+                throw new OrderCannotBeShippedException();
+            }
+
+            if (Status == OrderStatus.Shipped)
+            {
+                throw new OrderCannotBeShippedTwiceException();
+            }
+
+            shipmentService.Ship(this);
+
+            Status = OrderStatus.Shipped;
         }
     }
 }
