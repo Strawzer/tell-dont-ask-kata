@@ -38,6 +38,11 @@ namespace TellDontAskKata.Main.Domain
 
         public static Order Restore(int id, OrderStatus status, string currency, IEnumerable<OrderItem> items)
         {
+            if (!Enum.IsDefined(typeof(OrderStatus), status))
+            {
+                throw new ArgumentOutOfRangeException(nameof(status), status, "Status must be a defined OrderStatus value.");
+            }
+
             if (items == null)
             {
                 throw new ArgumentNullException(nameof(items));
@@ -60,6 +65,11 @@ namespace TellDontAskKata.Main.Domain
 
         public void AddItem(Product product, int quantity)
         {
+            if (IsShipped)
+            {
+                throw new ShippedOrdersCannotBeChangedException();
+            }
+
             Append(new OrderItem(product, quantity));
         }
 
@@ -110,6 +120,12 @@ namespace TellDontAskKata.Main.Domain
             if (IsShipped)
             {
                 throw new OrderCannotBeShippedTwiceException();
+            }
+
+            // Checked after the status guards so invalid states keep reporting their domain exception.
+            if (shipmentService == null)
+            {
+                throw new ArgumentNullException(nameof(shipmentService));
             }
 
             shipmentService.Ship(this);

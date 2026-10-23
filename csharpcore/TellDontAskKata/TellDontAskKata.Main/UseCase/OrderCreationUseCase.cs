@@ -1,4 +1,5 @@
-﻿using TellDontAskKata.Main.Domain;
+﻿using System;
+using TellDontAskKata.Main.Domain;
 using TellDontAskKata.Main.Repository;
 
 namespace TellDontAskKata.Main.UseCase
@@ -18,6 +19,21 @@ namespace TellDontAskKata.Main.UseCase
 
         public void Run(SellItemsRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.Requests == null)
+            {
+                throw new ArgumentException("Requests must not be null.", nameof(request));
+            }
+
+            if (request.Requests.Contains(null))
+            {
+                throw new ArgumentException("Requests must not contain null.", nameof(request));
+            }
+
             var order = Order.Create();
 
             foreach (var itemRequest in request.Requests)

@@ -269,27 +269,23 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(1, _orderRepository.SaveCount);
         }
 
-        // Characterizes incidental behavior: status checks only exclude known states,
-        // so an undefined status value is shippable.
         [Fact]
-        [Trait("Category", "IncidentalBehavior")]
-        public void OrderWithUndefinedStatusCanBeShipped()
+        public void OrderWithUndefinedStatusCannotBeRestoredSoNothingIsShipped()
         {
-            var initialOrder = TestOrders.WithStatus((OrderStatus)99, 1);
-            _orderRepository.AddOrder(initialOrder);
+            Action actionToTest = () =>
+            {
+                _orderRepository.AddOrder(TestOrders.WithStatus((OrderStatus)99, 1));
+                _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
+            };
 
-            _useCase.Run(new OrderShipmentRequest { OrderId = 1 });
-
-            Assert.Same(initialOrder, _shipmentService.GetShippedOrder());
-            Assert.Equal(OrderStatus.Shipped, initialOrder.Status);
-            Assert.Equal(1, _orderRepository.SaveCount);
+            Assert.Throws<ArgumentOutOfRangeException>(actionToTest);
+            Assert.Null(_shipmentService.GetShippedOrder());
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(0, _orderRepository.SaveCount);
         }
 
-        // Characterizes incidental behavior: an unknown order id is not handled explicitly,
-        // so the use case dereferences a null order.
         [Fact]
-        [Trait("Category", "IncidentalBehavior")]
-        public void UnknownOrderThrowsNullReferenceAndShipsNothing()
+        public void UnknownOrderThrowsOrderNotFoundAndShipsNothing()
         {
             var request = new OrderShipmentRequest
             {
@@ -298,7 +294,7 @@ namespace TellDontAskKata.Tests.UseCase
 
             Action actionToTest = () => _useCase.Run(request);
 
-            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Throws<OrderNotFoundException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
             Assert.Null(_shipmentService.GetShippedOrder());
         }

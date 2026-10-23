@@ -221,31 +221,26 @@ namespace TellDontAskKata.Tests.UseCase
             Assert.Equal(0, _orderRepository.SaveCount);
         }
 
-        // Characterizes incidental behavior: status checks only exclude known states,
-        // so an order with an undefined status value can be approved or rejected.
         [Theory]
-        [Trait("Category", "IncidentalBehavior")]
-        [InlineData(true, OrderStatus.Approved)]
-        [InlineData(false, OrderStatus.Rejected)]
-        public void OrderWithUndefinedStatusCanBeApprovedOrRejected(bool approved, OrderStatus expected)
-        {
-            var initialOrder = TestOrders.WithStatus((OrderStatus)99, 1);
-            _orderRepository.AddOrder(initialOrder);
-
-            _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
-
-            Assert.Same(initialOrder, _orderRepository.GetSavedOrder());
-            Assert.Equal(expected, initialOrder.Status);
-            Assert.Equal(1, _orderRepository.SaveCount);
-        }
-
-        // Characterizes incidental behavior: an unknown order id is not handled explicitly,
-        // so the use case dereferences a null order.
-        [Theory]
-        [Trait("Category", "IncidentalBehavior")]
         [InlineData(true)]
         [InlineData(false)]
-        public void UnknownOrderThrowsNullReferenceAndSavesNothing(bool approved)
+        public void OrderWithUndefinedStatusCannotBeRestoredSoNothingIsApprovedOrRejected(bool approved)
+        {
+            Action actionToTest = () =>
+            {
+                _orderRepository.AddOrder(TestOrders.WithStatus((OrderStatus)99, 1));
+                _useCase.Run(new OrderApprovalRequest { OrderId = 1, Approved = approved });
+            };
+
+            Assert.Throws<ArgumentOutOfRangeException>(actionToTest);
+            Assert.Null(_orderRepository.GetSavedOrder());
+            Assert.Equal(0, _orderRepository.SaveCount);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void UnknownOrderThrowsOrderNotFoundAndSavesNothing(bool approved)
         {
             var request = new OrderApprovalRequest
             {
@@ -255,7 +250,7 @@ namespace TellDontAskKata.Tests.UseCase
 
             Action actionToTest = () => _useCase.Run(request);
 
-            Assert.Throws<NullReferenceException>(actionToTest);
+            Assert.Throws<OrderNotFoundException>(actionToTest);
             Assert.Null(_orderRepository.GetSavedOrder());
         }
 
