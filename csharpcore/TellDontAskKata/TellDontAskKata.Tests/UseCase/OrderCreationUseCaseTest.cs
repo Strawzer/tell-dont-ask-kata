@@ -77,7 +77,7 @@ namespace TellDontAskKata.Tests.UseCase
             var request = new SellItemsRequest
             {
                 Requests = new List<SellItemRequest> { 
-                    new SellItemRequest { ProductName = "unknown product"}
+                    new SellItemRequest { ProductName = "unknown product", Quantity = 1 }
                 }
             };
 
