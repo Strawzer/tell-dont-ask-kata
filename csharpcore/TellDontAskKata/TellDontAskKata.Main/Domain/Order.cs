@@ -13,14 +13,6 @@ namespace TellDontAskKata.Main.Domain
         {
         }
 
-        private Order(OrderStatus status, string currency)
-        {
-            Status = status;
-            Currency = currency;
-            Total = 0m;
-            Tax = 0m;
-        }
-
         private Order(int id, OrderStatus status, string currency)
         {
             Id = id;
@@ -42,7 +34,7 @@ namespace TellDontAskKata.Main.Domain
 
         public static Order Create()
         {
-            return new Order(OrderStatus.Created, "EUR");
+            return new Order(0, OrderStatus.Created, "EUR");
         }
 
         public static Order Restore(int id, OrderStatus status, string currency, IEnumerable<OrderItem> items)
